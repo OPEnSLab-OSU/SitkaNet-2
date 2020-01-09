@@ -61,6 +61,7 @@ sensors_event_t event;
 
 SDI12 mySDI12(SDI_PIN);
 String buffer = "";
+int terosCounter = 1;
 
 // keeps track of active addresses
 // each bit represents an address:
@@ -174,10 +175,8 @@ void loop()
 	Loom.package();
    // scan address space 0-9
   for(char i = '0'; i <= '9'; i++) if(isTaken(i)){
-    Serial.print(millis()/1000);
-    Serial.print(",");
     printInfo(i);
-    Serial.print("\t\t,");
+    Serial.print("\t");
     takeMeasurement(i);
     Serial.println();
   }
@@ -188,9 +187,10 @@ void loop()
 	Loom.SDCARD().log();
 
   // Send to address 1
-  Loom.LoRa().send(1);
+  //Loom.LoRa().send(1);
 
   digitalWrite(LED_BUILTIN, LOW);
+  delay(10000);
 	Loom.pause();	 
 }
 
@@ -345,7 +345,17 @@ void printBufferToScreen(){
     }
     delay(50);
   }
-  Loom.add_teros(buffer);
+  
+  if (terosCounter == 1)
+  {
+    Loom.add_teros1(buffer);
+    terosCounter = 2;
+  }
+  else (terosCounter == 2);
+  {
+    Loom.add_teros2(buffer);
+    terosCounter = 1;
+  }
   Serial.print(buffer);
 }
 
@@ -395,7 +405,8 @@ void takeMeasurement(char i){
   while(!mySDI12.available()>1); // wait for acknowlegement
   delay(300); // let the data transfer
   printBufferToScreen();
-  mySDI12.clearBuffer();
+  mySDI12.clearBuffer(); 
+  buffer = "";
 }
 
 // this checks for activity at a particular address

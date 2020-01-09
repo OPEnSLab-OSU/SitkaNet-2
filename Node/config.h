@@ -3,7 +3,7 @@
 	{\
 		'name':'Device',\
 		'instance':1,\
-		'interval':60000,\
+		'interval':1000,\
 		'print_verbosity':2\
 	},\
 	'components':[\
