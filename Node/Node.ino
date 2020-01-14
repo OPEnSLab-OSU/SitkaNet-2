@@ -190,7 +190,7 @@ void loop()
   //Loom.LoRa().send(1);
 
   digitalWrite(LED_BUILTIN, LOW);
-  delay(10000);
+  delay(300000);
 	Loom.pause();	 
 }
 
@@ -346,12 +346,12 @@ void printBufferToScreen(){
     delay(50);
   }
   
-  if (terosCounter == 1)
+  if (terosCounter == 1) 
   {
     Loom.add_teros1(buffer);
     terosCounter = 2;
   }
-  else (terosCounter == 2);
+  else if (terosCounter == 2) 
   {
     Loom.add_teros2(buffer);
     terosCounter = 1;
