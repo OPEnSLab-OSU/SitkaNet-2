@@ -56,7 +56,7 @@ boolean setTaken(byte i);
 /* global variable declarations */ 
 //////////////////////////////////////////////////////////
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
-bool accelFlag = false;
+int accelFlag = 0;
 sensors_event_t event; 
 
 SDI12 mySDI12(SDI_PIN);
@@ -88,7 +88,7 @@ unsigned long interruptTime = 0;
 void wakeUpAccel()
 {
   detachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN));
-  accelFlag = true;
+  accelFlag++;
 }
 
 //Tipping Bucket ISR
@@ -136,7 +136,7 @@ void setup()
 
   mmaSetupSlideSentinel();
   
-  accelFlag = false;
+  accelFlag = 0;
   configInterrupts(mma);
 
   digitalWrite(ACCEL_INT_PIN, INPUT_PULLUP); // pullup interrupt
@@ -155,14 +155,19 @@ void setup()
 
 void loop() 
 {
+  digitalWrite(5, LOW); // Enable 3.3V rail
+  pinMode(10, OUTPUT); //Enable SD card pins
+  pinMode(23, OUTPUT);
+  pinMode(24, OUTPUT);
+
   // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
-  if(accelFlag){
+  if(accelFlag > 0){
       Serial.println("Interrupt triggered");   
       uint8_t dataRead = mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
       mmaPrintIntSRC(dataRead);
 
       digitalWrite(ACCEL_INT_PIN, INPUT_PULLUP);
-      accelFlag = false; // reset flag, clear the interrupt
+      //accelFlag = false; // reset flag, clear the interrupt
       // reattach the interrupt, can be done anywhere in code, but only after the interrupt has triggered and detached
       //EIC->INTFLAG.reg = 1 << ACCEL_INT_PIN; // clear interrupt flag pending
       EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
@@ -171,8 +176,11 @@ void loop()
   
   digitalWrite(LED_BUILTIN, HIGH);
 
+  Loom.Multiplexer().refresh_sensors(); //refresh I2C sensor list
+
 	Loom.measure();
 	Loom.package();
+  delay(100);
    // scan address space 0-9
   for(char i = '0'; i <= '9'; i++) if(isTaken(i)){
     printInfo(i);
@@ -180,15 +188,22 @@ void loop()
     takeMeasurement(i);
     Serial.println();
   }
-  Loom.add_tip_count(tipCount);
+  Loom.add_data("Tip", "Count", tipCount);
+  Loom.add_data("Accel", "Count", accelFlag);
 	Loom.display_data();
 	// Log using default filename as provided in configuration
 	// in this case, 'datafile.csv'
+  Loom.SDCARD().power_up(10);
 	Loom.SDCARD().log();
 
   // Send to address 1
   //Loom.LoRa().send(1);
 
+  digitalWrite(5, HIGH); // Turn off 3.3V rail
+  pinMode(23, INPUT); //Disable SD card pins to prevent current leak
+  pinMode(24, INPUT);
+  pinMode(10, INPUT);
+  
   digitalWrite(LED_BUILTIN, LOW);
   delay(300000);
 	Loom.pause();	 
@@ -348,12 +363,12 @@ void printBufferToScreen(){
   
   if (terosCounter == 1) 
   {
-    Loom.add_teros1(buffer);
+    Loom.add_data("Teros_1", "Moisture", buffer);
     terosCounter = 2;
   }
   else if (terosCounter == 2) 
   {
-    Loom.add_teros2(buffer);
+    Loom.add_data("Teros_2", "Moisture", buffer);
     terosCounter = 1;
   }
   Serial.print(buffer);
