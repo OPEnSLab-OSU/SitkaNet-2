@@ -1,0 +1,32 @@
+"{\
+	'general':\
+	{\
+		'name':'Device',\
+		'instance':1\
+	},\
+	'components':[\
+		{\
+			'name':'LoRa',\
+			'params':[255,1,23,3,200]\
+		},\
+    {\
+      'name':'Ethernet',\
+      'params':[\
+        'Ether1',\
+        [2,159,207,101,116,126],\
+        [192,168,0,1]\
+      ]\
+    },\
+    {\
+      'name':'GoogleSheets',\
+      'params':[\
+        'Goog',\
+        7001,\
+        '/macros/s/AKfycbzHXUpaubdUC1C1Fws8_fxr60gGRMr6xppnMQYB-SnZJDGOiak/exec',\
+        '1nBGiT9xXEZUDem4QkzAX9yA6SecjO0sqbVakNFKzRA4',\
+        true,\
+        '<your-tab-name>'\
+      ]\
+    }\
+	]\
+}"
