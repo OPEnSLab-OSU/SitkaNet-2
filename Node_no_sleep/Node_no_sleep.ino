@@ -1,4 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
+
 // This is a basic example that demonstrates usage of the Hypnos board.
 
 // The Hypnos board includes
@@ -35,13 +36,10 @@ LoomFactory<
 
 LoomManager Loom{ &ModuleFactory };
 
-//////////////////////////////////////////////////////////
 #define SDI_PIN 11
-#define RTC_INT_PIN 12
 #define ACCEL_INT_PIN 18
 #define TIP_INT_PIN 19
 
-//////////////////////////////////////////////////////////
 /* function declarations */ 
 void configInterrupts(Adafruit_MMA8451 device);
 void mmaPrintIntSRC(uint8_t dataRead);
@@ -55,8 +53,8 @@ boolean checkActive(char i);
 boolean isTaken(byte i);
 boolean setTaken(byte i);
 
-//////////////////////////////////////////////////////////
 /* global variable declarations */ 
+//////////////////////////////////////////////////////////
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 int accelFlag = 0;
 sensors_event_t event; 
@@ -96,6 +94,7 @@ void wakeUpAccel()
 //Tipping Bucket ISR
 void wakeUpTip()
 {
+  //detachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN));
   interruptTime = millis();
   if (interruptTime - lastInterruptTime > 200)
   {
@@ -103,13 +102,6 @@ void wakeUpTip()
   }
   lastInterruptTime = interruptTime;
 }
-
-//RTC Wake Interrupt
-void wakeUpRTC()
-{
-  detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
-}
-//////////////////////////////////////////////////////////
 
 void setup() 
 {
@@ -120,7 +112,7 @@ void setup()
 	//See Above
 	digitalWrite(5, LOW);	// Enable 3.3V rail
 
-	Loom.begin_serial(false);
+	Loom.begin_serial(true);
 	Loom.parse_config(json_config);
 	Loom.print_config();
   
@@ -130,7 +122,7 @@ void setup()
   Serial.println("Scanning all addresses, please wait...");
   //Quickly Scan the Address Space
 
-  for(byte i = 'A'; i <= 'D'; i++) if(checkActive(i)) setTaken(i);   // scan address space A-Z
+  for(byte i = '0'; i <= '9'; i++) if(checkActive(i)) setTaken(i);   // scan address space 0-9
 
   //See if there are any active sensors
   boolean found = false;
@@ -160,6 +152,7 @@ void setup()
 	LPrintln("\n ** Setup Complete ** ");
 }
 
+
 void loop() 
 {
   digitalWrite(5, LOW); // Enable 3.3V rail
@@ -188,42 +181,34 @@ void loop()
 	Loom.measure();
 	Loom.package();
   delay(100);
-  
    // scan address space 0-9
-  for(char i = 'A'; i <= 'D'; i++) if(isTaken(i)){
+  for(char i = '0'; i <= '9'; i++) if(isTaken(i)){
     printInfo(i);
     Serial.print("\t");
     takeMeasurement(i);
     Serial.println();
   }
-  
   Loom.add_data("Tip", "Count", tipCount);
   Loom.add_data("Accel", "Count", accelFlag);
 	Loom.display_data();
 	// Log using default filename as provided in configuration
+	// in this case, 'datafile.csv'
   Loom.SDCARD().power_up(10);
 	Loom.SDCARD().log();
 
   // Send to address 1
-  Loom.LoRa().send(1);
+  //Loom.LoRa().send(1);
 
   digitalWrite(5, HIGH); // Turn off 3.3V rail
   pinMode(23, INPUT); //Disable SD card pins to prevent current leak
   pinMode(24, INPUT);
   pinMode(10, INPUT);
   
-  //Go to sleep if accelerometer is not triggered
-//  if (accelFlag < 2)
-//  {
-//    Loom.InterruptManager().RTC_alarm_duration(0, 0, 5, 0);
-//    digitalWrite(LED_BUILTIN, LOW);
-//    Loom.SleepManager().sleep();
-//  }
-//  delay(300000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(300000);
 	Loom.pause();	 
 }
 
-//////////////////////////////////////////////////////////
 // comment/uncomment these to enable functionality described
 /* Transient detection donfiguration for mma accelerometer, use this format and Adafruit_MMA8451::writeRegister8_public to configure registers */
 void configInterrupts(Adafruit_MMA8451 device){
@@ -335,8 +320,8 @@ void mmaPrintIntSRC(uint8_t dataRead){
 // to a decimal number between 0 and 61 (inclusive) to cover the 62 possible addresses
 byte charToDec(char i){
   if((i >= '0') && (i <= '9')) return i - '0';
-  if((i >= 'a') && (i <= 'z')) return i - 'a' + 10;
-  if((i >= 'A') && (i <= 'Z')) return i - 'A' + 37;
+//  if((i >= 'a') && (i <= 'z')) return i - 'a' + 10;
+//  if((i >= 'A') && (i <= 'Z')) return i - 'A' + 37;
   else return i;
 }
 
@@ -375,6 +360,7 @@ void printBufferToScreen(){
     }
     delay(50);
   }
+  
   if (terosCounter == 1) 
   {
     Loom.add_data("Teros_1", "Moisture", buffer);
@@ -406,9 +392,11 @@ void takeMeasurement(char i){
     }
   }
   mySDI12.clearBuffer();
+
   // find out how long we have to wait (in seconds).
   unsigned int wait = 0;
   wait = sdiResponse.substring(1,4).toInt();
+
   // Set up the number of results to expect
   // int numMeasurements =  sdiResponse.substring(4,5).toInt();
 
@@ -423,6 +411,7 @@ void takeMeasurement(char i){
   // Wait for anything else and clear it out
   delay(30);
   mySDI12.clearBuffer();
+
   // in this example we will only take the 'DO' measurement
   command = "";
   command += i;
