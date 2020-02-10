@@ -1,7 +1,7 @@
 "{\
 	'general':\
 	{\
-		'name':'Device',\
+		'name':'Sitka',\
 		'instance':1,\
 		'interval':1000,\
 		'print_verbosity':2\
@@ -23,14 +23,18 @@
       ]\
 		},\
     {\
-      'name':'Decagon_5TM',\
-      'params': 'default'\
+      'name':'Loom_Interrupt_Manager',\
+      'params':[0]\
+    },\
+    {\
+        'name':'Loom_Sleep_Manager',\
+        'params':[true,false,1,1]\
     },\
     {\
       'name':'LoRa',\
       'params':[\
         255,\
-        0,\
+        4,\
         23,\
         3,\
         200\

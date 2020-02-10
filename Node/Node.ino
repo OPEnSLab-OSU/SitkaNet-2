@@ -120,7 +120,7 @@ void setup()
 	//See Above
 	digitalWrite(5, LOW);	// Enable 3.3V rail
 
-	Loom.begin_serial(false);
+	Loom.begin_serial(true);
 	Loom.parse_config(json_config);
 	Loom.print_config();
   
@@ -149,12 +149,20 @@ void setup()
 
   digitalWrite(ACCEL_INT_PIN, INPUT_PULLUP); // pullup interrupt
   attachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN), wakeUpAccel, LOW);
-  Serial.println("MMA Interrupt attached");
+//  Serial.println("MMA Interrupt attached");
 
   digitalWrite(TIP_INT_PIN, INPUT_PULLUP); // pullup interrupt
-  attachInterrupt(digitalPinToInterrupt(TIP_INT_PIN), wakeUpTip, FALLING);
-  Serial.println("Tip Interrupt attached");  
-  
+  attachInterrupt(digitalPinToInterrupt(TIP_INT_PIN), wakeUpTip, LOW);
+//  Serial.println("Tip Interrupt attached");
+
+  digitalWrite(RTC_INT_PIN, INPUT_PULLUP); // pullup interrupt
+  attachInterrupt(digitalPinToInterrupt(RTC_INT_PIN), wakeUpRTC, LOW);
+//  Serial.println("Tip Interrupt attached");    
+
+//  Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
+//  Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
+//  Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
+
   mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
 
 	LPrintln("\n ** Setup Complete ** ");
@@ -162,10 +170,15 @@ void setup()
 
 void loop() 
 {
+  digitalWrite(LED_BUILTIN, HIGH);
   digitalWrite(5, LOW); // Enable 3.3V rail
   pinMode(10, OUTPUT); //Enable SD card pins
   pinMode(23, OUTPUT);
   pinMode(24, OUTPUT);
+
+//  Loom.InterruptManager().interrupt_reset(ACCEL_INT_PIN);
+//  Loom.InterruptManager().interrupt_reset(TIP_INT_PIN);
+//  Loom.InterruptManager().interrupt_reset(RTC_INT_PIN);
 
   // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
   if(accelFlag > 0){
@@ -181,8 +194,6 @@ void loop()
       attachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN), wakeUpAccel, LOW);
   }
   
-  digitalWrite(LED_BUILTIN, HIGH);
-
   Loom.Multiplexer().refresh_sensors(); //refresh I2C sensor list
 
 	Loom.measure();
@@ -199,27 +210,29 @@ void loop()
   
   Loom.add_data("Tip", "Count", tipCount);
   Loom.add_data("Accel", "Count", accelFlag);
+  Loom.add_data("Vbat", "", Loom.Analog().get_battery());
 	Loom.display_data();
 	// Log using default filename as provided in configuration
   Loom.SDCARD().power_up(10);
 	Loom.SDCARD().log();
 
   // Send to address 1
-  Loom.LoRa().send(1);
-
+  Loom.LoRa().send(3);
+  
   digitalWrite(5, HIGH); // Turn off 3.3V rail
   pinMode(23, INPUT); //Disable SD card pins to prevent current leak
   pinMode(24, INPUT);
   pinMode(10, INPUT);
   
   //Go to sleep if accelerometer is not triggered
-//  if (accelFlag < 2)
-//  {
-//    Loom.InterruptManager().RTC_alarm_duration(0, 0, 5, 0);
-//    digitalWrite(LED_BUILTIN, LOW);
-//    Loom.SleepManager().sleep();
-//  }
-//  delay(300000);
+  if (accelFlag < 2)
+  {
+    Loom.InterruptManager().RTC_alarm_duration(0, 0, 5, 0);
+    Serial.println("RTC Alarm set. Sleeping...");
+    digitalWrite(LED_BUILTIN, LOW);
+    Loom.SleepManager().sleep();
+  }
+  
 	Loom.pause();	 
 }
 
@@ -375,14 +388,37 @@ void printBufferToScreen(){
     }
     delay(50);
   }
+  
+  char * strtokIndx; // this is used by strtok() as an index
+  float moisture; //Teros soil moisture
+  float temp; //Teros soil temperature 
+  char buf[16];
   if (terosCounter == 1) 
   {
-    Loom.add_data("Teros_1", "Moisture", buffer);
+    buffer.toCharArray(buf, 16);
+    strtokIndx = strtok(buf,",");      // get the first part - the string
+    moisture = atof(strtokIndx);     // convert this part to a float
+ 
+    strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
+    temp = atof(strtokIndx);     // convert this part to an integer
+
+    Loom.add_data("T_AM", "M", moisture);
+    Loom.add_data("T_AM", "T", temp);    
+//    Loom.add_data("T_A", "M", buffer);
     terosCounter = 2;
   }
   else if (terosCounter == 2) 
   {
-    Loom.add_data("Teros_2", "Moisture", buffer);
+    buffer.toCharArray(buf, 16);
+    strtokIndx = strtok(buf,",");      // get the first part - the string
+    moisture = atof(strtokIndx);     // convert this part to a float
+ 
+    strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
+    temp = atof(strtokIndx);     // convert this part to an integer
+
+    Loom.add_data("T_BM", "M", moisture);
+    Loom.add_data("T_BT", "T", temp); 
+//    Loom.add_data("T_B", "M", buffer);
     terosCounter = 1;
   }
   Serial.print(buffer);
