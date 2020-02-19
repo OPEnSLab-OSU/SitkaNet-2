@@ -33,12 +33,9 @@ typedef union {
  * Convert a JSON output from Loom into a SitkaNet_t struct for transmission over LoRa.
  * JSON MUST be of the format outputted by Loom.
  * @param[in] data JsonObject pointing to the root object of the Loom data bundle
- * @param[in] tipBucket Number representing the tipping bucket count
- * @param[in] mmaInt Number representing the accelerometer interrupt count
- * @param[in] lastRssi The last signal strength of the LoRa packet sentry
  * @param[out] out SiktaNet_t struct to fill with values.
  */
-void json_to_struct(const JsonObjectConst& data, const int tipBucket, const int mmaInt, const float lastRssi, SitkaNet_t& out);
+void json_to_struct(const JsonObjectConst& data, SitkaNet_t& out);
 
 /**
  * Convert a SitkaNet_t struct into a JSON document of the format outputted by Loom.

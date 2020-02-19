@@ -50,7 +50,7 @@ static bool get_data_point_from_contents_int(const JsonArrayConst& contents, con
 	return false;
 }
 
-void json_to_struct(const JsonObjectConst& data, const int tipBucket, const int mmaInt, const float lastRssi, SitkaNet_t& out) {
+void json_to_struct(const JsonObjectConst& data, SitkaNet_t& out) {
 	// name, instance
 	const JsonObjectConst id = data["id"];
 	if (!id.isNull()) {
