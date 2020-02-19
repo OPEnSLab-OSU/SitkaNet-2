@@ -213,7 +213,7 @@ void loop()
     
     Loom.add_data("Tip", "Count", tipCount);
     Loom.add_data("Accel", "Count", accelFlag);
-  //  Loom.add_data("Vbat", "", Loom.Analog().get_battery());
+    Loom.add_data("rssi", "value", Loom.LoRa().get_rssi())
     Loom.display_data();
     // Log using default filename as provided in configuration
     Loom.SDCARD().power_up(10);
