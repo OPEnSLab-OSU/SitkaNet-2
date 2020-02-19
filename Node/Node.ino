@@ -38,8 +38,8 @@ LoomManager Loom{ &ModuleFactory };
 //////////////////////////////////////////////////////////
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
-#define ACCEL_INT_PIN 18
-#define TIP_INT_PIN 19
+#define ACCEL_INT_PIN 1
+#define TIP_INT_PIN 0
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
@@ -65,6 +65,8 @@ SDI12 mySDI12(SDI_PIN);
 String buffer = "";
 int terosCounter = 1;
 
+volatile bool tipFlag = false;
+
 // keeps track of active addresses
 // each bit represents an address:
 // 1 is active (taken), 0 is inactive (available)
@@ -89,16 +91,18 @@ unsigned long interruptTime = 0;
 //MMA Accelerometer ISR
 void wakeUpAccel()
 {
-  detachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN));
+  detachInterrupt(ACCEL_INT_PIN);
   accelFlag++;
 }
 
 //Tipping Bucket ISR
 void wakeUpTip()
 {
+  detachInterrupt(TIP_INT_PIN);
   interruptTime = millis();
   if (interruptTime - lastInterruptTime > 200)
   {
+    tipFlag = true;
     tipCount++;
   }
   lastInterruptTime = interruptTime;
@@ -107,14 +111,18 @@ void wakeUpTip()
 //RTC Wake Interrupt
 void wakeUpRTC()
 {
-  detachInterrupt(digitalPinToInterrupt(RTC_INT_PIN));
+  detachInterrupt(RTC_INT_PIN);
 }
 //////////////////////////////////////////////////////////
 
 void setup() 
 {
   pinMode(LED_BUILTIN, OUTPUT);
-	// Needs to be done for Hypno Board
+  pinMode(RTC_INT_PIN, INPUT_PULLUP);
+  pinMode(TIP_INT_PIN, INPUT_PULLUP);
+  pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
+
+	// Needs to be done for Hypnos Board
 	pinMode(5, OUTPUT);		// Enable control of 3.3V rail 
 
 	//See Above
@@ -147,21 +155,9 @@ void setup()
   accelFlag = 0;
   configInterrupts(mma);
 
-  digitalWrite(ACCEL_INT_PIN, INPUT_PULLUP); // pullup interrupt
-  attachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN), wakeUpAccel, LOW);
-//  Serial.println("MMA Interrupt attached");
-
-  digitalWrite(TIP_INT_PIN, INPUT_PULLUP); // pullup interrupt
-  attachInterrupt(digitalPinToInterrupt(TIP_INT_PIN), wakeUpTip, LOW);
-//  Serial.println("Tip Interrupt attached");
-
-  digitalWrite(RTC_INT_PIN, INPUT_PULLUP); // pullup interrupt
-  attachInterrupt(digitalPinToInterrupt(RTC_INT_PIN), wakeUpRTC, LOW);
-//  Serial.println("Tip Interrupt attached");    
-
-//  Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
-//  Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
-//  Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
+  Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
+  Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
+  Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
 
   mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
 
@@ -170,70 +166,78 @@ void setup()
 
 void loop() 
 {
-  digitalWrite(LED_BUILTIN, HIGH);
-  digitalWrite(5, LOW); // Enable 3.3V rail
-  pinMode(10, OUTPUT); //Enable SD card pins
-  pinMode(23, OUTPUT);
-  pinMode(24, OUTPUT);
-
-//  Loom.InterruptManager().interrupt_reset(ACCEL_INT_PIN);
-//  Loom.InterruptManager().interrupt_reset(TIP_INT_PIN);
-//  Loom.InterruptManager().interrupt_reset(RTC_INT_PIN);
-
-  // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
-  if(accelFlag > 0){
-      Serial.println("Interrupt triggered");   
-      uint8_t dataRead = mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
-      mmaPrintIntSRC(dataRead);
-
-      digitalWrite(ACCEL_INT_PIN, INPUT_PULLUP);
-      //accelFlag = false; // reset flag, clear the interrupt
-      // reattach the interrupt, can be done anywhere in code, but only after the interrupt has triggered and detached
-      //EIC->INTFLAG.reg = 1 << ACCEL_INT_PIN; // clear interrupt flag pending
-      EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
-      attachInterrupt(digitalPinToInterrupt(ACCEL_INT_PIN), wakeUpAccel, LOW);
+  delay(5000);
+  
+  if (tipFlag)
+  {
+    tipFlag = false;
+    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
+    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
+    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   }
+  else 
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(5, LOW); // Enable 3.3V rail
+    pinMode(10, OUTPUT); //Enable SD card pins
+    pinMode(23, OUTPUT);
+    pinMode(24, OUTPUT);
+   
+    // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
+    if(accelFlag > 0){
+        Serial.println("Interrupt triggered");   
+        uint8_t dataRead = mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
+        mmaPrintIntSRC(dataRead);
+        
+        // reattach the interrupt, can be done anywhere in code, but only after the interrupt has triggered and detached
+        pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
+        Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
+        //EIC->INTFLAG.reg = 1 << ACCEL_INT_PIN; // clear interrupt flag pending
+        EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
+    }
+    
+    Loom.Multiplexer().refresh_sensors(); //refresh I2C sensor list
+    delay(200);
+    
+    Loom.measure();
+    Loom.package();
+    delay(100);
+    
+     // scan address space 0-9
+    for(char i = 'A'; i <= 'D'; i++) if(isTaken(i)){
+      printInfo(i);
+      Serial.print("\t");
+      takeMeasurement(i);
+      Serial.println();
+    }
+    
+    Loom.add_data("Tip", "Count", tipCount);
+    Loom.add_data("Accel", "Count", accelFlag);
+  //  Loom.add_data("Vbat", "", Loom.Analog().get_battery());
+    Loom.display_data();
+    // Log using default filename as provided in configuration
+    Loom.SDCARD().power_up(10);
+    Loom.SDCARD().log();
   
-  Loom.Multiplexer().refresh_sensors(); //refresh I2C sensor list
-
-	Loom.measure();
-	Loom.package();
-  delay(100);
-  
-   // scan address space 0-9
-  for(char i = 'A'; i <= 'D'; i++) if(isTaken(i)){
-    printInfo(i);
-    Serial.print("\t");
-    takeMeasurement(i);
-    Serial.println();
+    // Send to address 1
+    Loom.LoRa().send(3);
   }
-  
-  Loom.add_data("Tip", "Count", tipCount);
-  Loom.add_data("Accel", "Count", accelFlag);
-  Loom.add_data("Vbat", "", Loom.Analog().get_battery());
-	Loom.display_data();
-	// Log using default filename as provided in configuration
-  Loom.SDCARD().power_up(10);
-	Loom.SDCARD().log();
-
-  // Send to address 1
-  Loom.LoRa().send(3);
-  
-  digitalWrite(5, HIGH); // Turn off 3.3V rail
-  pinMode(23, INPUT); //Disable SD card pins to prevent current leak
-  pinMode(24, INPUT);
-  pinMode(10, INPUT);
   
   //Go to sleep if accelerometer is not triggered
   if (accelFlag < 2)
   {
-    Loom.InterruptManager().RTC_alarm_duration(0, 0, 5, 0);
+    digitalWrite(5, HIGH); // Turn off 3.3V rail
+    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
+    pinMode(24, INPUT);
+    pinMode(10, INPUT);
+    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 0, 20));
+    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
+    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
+    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
     Serial.println("RTC Alarm set. Sleeping...");
     digitalWrite(LED_BUILTIN, LOW);
     Loom.SleepManager().sleep();
   }
-  
-	Loom.pause();	 
 }
 
 //////////////////////////////////////////////////////////
@@ -403,7 +407,7 @@ void printBufferToScreen(){
     temp = atof(strtokIndx);     // convert this part to an integer
 
     Loom.add_data("T_AM", "M", moisture);
-    Loom.add_data("T_AM", "T", temp);    
+    Loom.add_data("T_AT", "T", temp);    
 //    Loom.add_data("T_A", "M", buffer);
     terosCounter = 2;
   }

@@ -112,7 +112,7 @@ void setup()
 	//See Above
 	digitalWrite(5, LOW);	// Enable 3.3V rail
 
-	Loom.begin_serial(true);
+	Loom.begin_serial(false);
 	Loom.parse_config(json_config);
 	Loom.print_config();
   
@@ -190,6 +190,7 @@ void loop()
   }
   Loom.add_data("Tip", "Count", tipCount);
   Loom.add_data("Accel", "Count", accelFlag);
+  Loom.add_data("Vbat", "", Loom.Analog().get_battery());
 	Loom.display_data();
 	// Log using default filename as provided in configuration
 	// in this case, 'datafile.csv'
@@ -197,7 +198,7 @@ void loop()
 	Loom.SDCARD().log();
 
   // Send to address 1
-  //Loom.LoRa().send(1);
+  //Loom.LoRa().send(3);
 
   digitalWrite(5, HIGH); // Turn off 3.3V rail
   pinMode(23, INPUT); //Disable SD card pins to prevent current leak

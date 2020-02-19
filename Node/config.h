@@ -7,9 +7,29 @@
 		'print_verbosity':2\
 	},\
 	'components':[\
+    {\
+      'name':'Analog',\
+      'params':[\
+        4,\
+        8,\
+        false,\
+        false,\
+        false,\
+        false,\
+        false,\
+        false,\
+        0,\
+        0,\
+        0,\
+        0,\
+        0,\
+        0,\
+        25.0\
+      ]\
+    },\
 		{\
 			'name':'Multiplexer',\
-			'params':[113,8,false, 0]\
+			'params':[113,8,true, 0]\
 		},\
 		{\
 			'name':'SD',\
@@ -23,12 +43,12 @@
       ]\
 		},\
     {\
-      'name':'Loom_Interrupt_Manager',\
+      'name':'Interrupt_Manager',\
       'params':[0]\
     },\
     {\
-        'name':'Loom_Sleep_Manager',\
-        'params':[true,false,1,1]\
+      'name':'Sleep_Manager',\
+      'params':[true,false,1]\
     },\
     {\
       'name':'LoRa',\
