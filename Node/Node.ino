@@ -18,6 +18,7 @@
 #include "SDI12.h"
 //#include <EnableInterrupt.h>
 #include "wiring_private.h" // pinPeripheral() function
+#include "SitkaNetJSON.h"
 
 // Include configuration
 const char* json_config = 
@@ -213,14 +214,19 @@ void loop()
     
     Loom.add_data("Tip", "Count", tipCount);
     Loom.add_data("Accel", "Count", accelFlag);
-    Loom.add_data("rssi", "value", Loom.LoRa().get_rssi())
+    Loom.add_data("rssi", "value", Loom.LoRa().get_rssi());
     Loom.display_data();
     // Log using default filename as provided in configuration
     Loom.SDCARD().power_up(10);
     Loom.SDCARD().log();
   
     // Send to address 1
-    Loom.LoRa().send(3);
+    SitkaNet_t out_struct;
+    const JsonObjectConst internal_data = Loom.internal_json(false);
+    json_to_struct(internal_data, out_struct);
+
+    Loom.LoRa().send_raw(out_struct.raw, sizeof(out_struct.raw), 3);
+    // Loom.LoRa().send(3);
   }
   
   //Go to sleep if accelerometer is not triggered

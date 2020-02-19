@@ -20,6 +20,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <Loom.h>
+#include "SitkaNetJSON.h"
 
 // Include configuration
 const char* json_config = 
@@ -50,7 +51,10 @@ void setup()
 
 void loop() 
 {
-	if (Loom.LoRa().receive_blocking(5000)) {
+  SitkaNet_t in_data;
+	if (Loom.LoRa().receive_blocking_raw(in_data.raw, sizeof(in_data.raw), 5000)) {
+    JsonObject internal_json = Loom.internal_json(true);
+    struct_to_json(in_data, internal_json);
 		Loom.display_data();
 		Loom.GoogleSheets().publish();
 	}
