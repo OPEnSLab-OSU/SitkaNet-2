@@ -29,7 +29,7 @@
     },\
 		{\
 			'name':'Multiplexer',\
-			'params':[113,8,true, 0]\
+			'params':[113,8,true, 5000]\
 		},\
 		{\
 			'name':'SD',\

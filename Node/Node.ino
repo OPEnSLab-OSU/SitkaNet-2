@@ -44,6 +44,8 @@ LoomManager Loom{ &ModuleFactory };
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
+void clear_alarms();
+
 void configInterrupts(Adafruit_MMA8451 device);
 void mmaPrintIntSRC(uint8_t dataRead);
 void mmaSetupSlideSentinel();
@@ -166,9 +168,7 @@ void setup()
 }
 
 void loop() 
-{
-  delay(5000);
-  
+{  
   if (tipFlag)
   {
     tipFlag = false;
@@ -177,12 +177,19 @@ void loop()
     Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   }
   else 
-  {
+  {         
     digitalWrite(LED_BUILTIN, HIGH);
+    while(!Serial){}
     digitalWrite(5, LOW); // Enable 3.3V rail
     pinMode(10, OUTPUT); //Enable SD card pins
     pinMode(23, OUTPUT);
     pinMode(24, OUTPUT);
+
+    Loom.DS3231().clear_alarms();
+
+//    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
+//    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
+//    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
    
     // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
     if(accelFlag > 0){
@@ -191,14 +198,12 @@ void loop()
         mmaPrintIntSRC(dataRead);
         
         // reattach the interrupt, can be done anywhere in code, but only after the interrupt has triggered and detached
-        pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
-        Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
-        //EIC->INTFLAG.reg = 1 << ACCEL_INT_PIN; // clear interrupt flag pending
+//        pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
+//        Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
         EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
     }
-    
-    Loom.Multiplexer().refresh_sensors(); //refresh I2C sensor list
-    delay(200);
+   
+    Loom.power_up();
     
     Loom.measure();
     Loom.package();
@@ -217,16 +222,15 @@ void loop()
     Loom.add_data("rssi", "value", Loom.LoRa().get_rssi());
     Loom.display_data();
     // Log using default filename as provided in configuration
-    Loom.SDCARD().power_up(10);
+//    Loom.SDCARD().power_up(10);
     Loom.SDCARD().log();
   
-    // Send to address 1
+    // Send to address 3
     SitkaNet_t out_struct;
     const JsonObjectConst internal_data = Loom.internal_json(false);
     json_to_struct(internal_data, out_struct);
 
     Loom.LoRa().send_raw(out_struct.raw, sizeof(out_struct.raw), 3);
-    // Loom.LoRa().send(3);
   }
   
   //Go to sleep if accelerometer is not triggered
@@ -236,11 +240,10 @@ void loop()
     pinMode(23, INPUT); //Disable SD card pins to prevent current leak
     pinMode(24, INPUT);
     pinMode(10, INPUT);
-    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 0, 20));
+    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 0, 30));
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
     Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
-    Serial.println("RTC Alarm set. Sleeping...");
     digitalWrite(LED_BUILTIN, LOW);
     Loom.SleepManager().sleep();
   }
