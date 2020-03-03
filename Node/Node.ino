@@ -179,17 +179,13 @@ void loop()
   else 
   {         
     digitalWrite(LED_BUILTIN, HIGH);
-    while(!Serial){}
+//    while(!Serial){}
     digitalWrite(5, LOW); // Enable 3.3V rail
     pinMode(10, OUTPUT); //Enable SD card pins
     pinMode(23, OUTPUT);
     pinMode(24, OUTPUT);
 
     Loom.DS3231().clear_alarms();
-
-//    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
-//    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
-//    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
    
     // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
     if(accelFlag > 0){
@@ -240,7 +236,7 @@ void loop()
     pinMode(23, INPUT); //Disable SD card pins to prevent current leak
     pinMode(24, INPUT);
     pinMode(10, INPUT);
-    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 0, 30));
+    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 5, 0));
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
     Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
