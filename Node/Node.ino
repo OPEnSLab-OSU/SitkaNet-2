@@ -173,8 +173,6 @@ void loop()
   {
     tipFlag = false;
     Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
-    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
-    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   }
   else 
   {         
@@ -228,9 +226,10 @@ void loop()
 
     Loom.LoRa().send_raw(out_struct.raw, sizeof(out_struct.raw), 3);
   }
-  
+
+  Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   //Go to sleep if accelerometer is not triggered
-  if (accelFlag < 2)
+  if (accelFlag < 3)
   {
     digitalWrite(5, HIGH); // Turn off 3.3V rail
     pinMode(23, INPUT); //Disable SD card pins to prevent current leak
@@ -238,8 +237,6 @@ void loop()
     pinMode(10, INPUT);
     Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 5, 0));
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
-    Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
-    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
     Loom.SleepManager().sleep();
   }

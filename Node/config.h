@@ -2,7 +2,7 @@
 	'general':\
 	{\
 		'name':'Sitka',\
-		'instance':1,\
+		'instance':2,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\
