@@ -1,7 +1,7 @@
 "{\
 	'general':\
 	{\
-		'name':'Sitka',\
+		'name':'Sitka4',\
 		'instance':2,\
 		'interval':1000,\
 		'print_verbosity':2\
