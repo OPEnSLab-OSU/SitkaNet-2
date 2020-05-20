@@ -1,8 +1,8 @@
 "{\
 	'general':\
 	{\
-		'name':'Sitka4',\
-		'instance':2,\
+		'name':'Sitka',\
+		'instance':4,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\

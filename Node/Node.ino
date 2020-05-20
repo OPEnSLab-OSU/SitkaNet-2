@@ -40,8 +40,8 @@ LoomManager Loom{ &ModuleFactory };
 //////////////////////////////////////////////////////////
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
-#define ACCEL_INT_PIN 1
-#define TIP_INT_PIN 0
+#define ACCEL_INT_PIN 0
+#define TIP_INT_PIN 1
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
@@ -62,7 +62,7 @@ boolean setTaken(byte i);
 //////////////////////////////////////////////////////////
 /* global variable declarations */ 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
-volatile int accelFlag = 0;
+int accelFlag = 0;
 sensors_event_t event; 
 
 SDI12 mySDI12(SDI_PIN);
@@ -86,7 +86,7 @@ byte addressRegister[8] = {
   0B00000000
 };
 
-volatile int tipCount = 0;
+int tipCount = 0;
 
 unsigned long lastInterruptTime = 0;
 unsigned long interruptTime = 0;
@@ -102,7 +102,7 @@ void wakeUpAccel()
 //Tipping Bucket ISR
 void wakeUpTip()
 {
-//  detachInterrupt(TIP_INT_PIN);
+  detachInterrupt(TIP_INT_PIN);
   interruptTime = millis();
   if (interruptTime - lastInterruptTime > 200)
   {
@@ -169,8 +169,7 @@ void setup()
   accelFlag = 0;
   configInterrupts(mma);
   MARK;
-  attachInterrupt(TIP_INT_PIN, wakeUpTip, LOW);
-//  Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
+  Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
   Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
   Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
   MARK;
@@ -186,7 +185,7 @@ void loop()
   {
     tipFlag = false;
     MARK;
-//    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
+    Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
     MARK;
   }
   else 
@@ -195,9 +194,9 @@ void loop()
     digitalWrite(LED_BUILTIN, HIGH);
 //    while(!Serial){}
     digitalWrite(5, LOW); // Enable 3.3V rail
-    pinMode(10, OUTPUT); //Enable SD card pins
-    pinMode(23, OUTPUT);
-    pinMode(24, OUTPUT);
+//    pinMode(10, OUTPUT); //Enable SD card pins
+//    pinMode(23, OUTPUT);
+//    pinMode(24, OUTPUT);
     MARK;
     Loom.DS3231().clear_alarms();
     MARK;
@@ -234,7 +233,13 @@ void loop()
     Loom.display_data();
     // Log using default filename as provided in configuration
 //    Loom.SDCARD().power_up(10);
-    Loom.SDCARD().log();
+//
+    if(Loom.SDCARD().is_active()){
+          Loom.SDCARD().log();
+    }
+    else{
+          Serial.println("NO SD CARD FOUND");
+    }
     MARK;
     // Send to address 3
     SitkaNet_t out_struct;
@@ -244,8 +249,6 @@ void loop()
     Loom.LoRa().send_raw(out_struct.raw, sizeof(out_struct.raw), 3);
     MARK;
   }
-//  pinMode(TIP_INT_PIN, INPUT_PULLUP);
-//  attachInterrupt(TIP_INT_PIN, wakeUpTip, LOW);
   MARK;
   Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   MARK;
@@ -324,7 +327,7 @@ void configInterrupts(Adafruit_MMA8451 device){
     // MMA8451_REG_TRANSIENT_THS
     // Transient interrupt threshold in units of .06g
     //Acceptable range is 1-127
-    dataToWrite = 0x40; //2g threshold
+    dataToWrite = 0x20; //2g threshold
     device.writeRegister8_public(MMA8451_REG_TRANSIENT_THS, dataToWrite);
 
     dataToWrite = 0;
