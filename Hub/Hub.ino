@@ -42,20 +42,40 @@ LoomManager Loom{ &ModuleFactory };
 
 void setup() 
 { 
+	  if (FeatherFault::DidFault()) {
+        // perform cleanup here
+  }
+  Serial.begin(9600);
+  while(!Serial)
+  FeatherFault::PrintFault(Serial);
+  Serial.flush();
+  FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
+  MARK;
 	Loom.begin_serial();
+	  MARK;
 	Loom.parse_config(json_config);
+	  MARK;
 	Loom.print_config();
+	  MARK;
 
 	LPrintln("\n ** Setup Complete ** ");
+	  MARK;
 }
 
 void loop() 
 {
+	  MARK;
   SitkaNet_t in_data;
 	if (Loom.LoRa().receive_blocking_raw(in_data.raw, sizeof(in_data.raw), 1000)) {
-    JsonObject internal_json = Loom.internal_json(true);
+      MARK;
+	JsonObject internal_json = Loom.internal_json(true);
+	  MARK;
     struct_to_json(in_data, internal_json);
+	  MARK;
 		Loom.display_data();
+		  MARK;
 		Loom.GoogleSheets().publish();
+		  MARK;
 	}
+	  MARK;
 }
