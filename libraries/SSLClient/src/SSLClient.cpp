@@ -104,11 +104,11 @@ int SSLClient::connect(IPAddress ip, uint16_t port) {
 /* see SSLClient.h*/
 int SSLClient::connect(const char *host, uint16_t port) {
     const char* func_name = __func__;
-    // connection check
-    if (get_arduino_client().connected()) {
-        m_error("Cannot have two connections at the same time! Please create another SSLClient instance.", func_name);
-        return 0;
-    }
+    // // connection check
+    // if (get_arduino_client().connected()) {
+    //     m_error("Cannot have two connections at the same time! Please create another SSLClient instance.", func_name);
+    //     return 0;
+    // }
     // reset indexs for saftey
     m_write_idx = 0;
     // first we need our hidden client member to negotiate the socket for us,
