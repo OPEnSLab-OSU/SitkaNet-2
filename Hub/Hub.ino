@@ -21,6 +21,7 @@
 
 #include <Loom.h>
 #include "SitkaNetJSON.h"
+#include "FeatherFault.h"
 
 // Include configuration
 const char* json_config = 
@@ -46,7 +47,7 @@ void setup()
         // perform cleanup here
   }
   Serial.begin(9600);
-  while(!Serial)
+//  while(!Serial)
   FeatherFault::PrintFault(Serial);
   Serial.flush();
   FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);

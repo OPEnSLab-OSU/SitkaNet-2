@@ -1,3 +1,5 @@
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // This is a basic example that demonstrates usage of the Hypnos board.
 
@@ -40,8 +42,8 @@ LoomManager Loom{ &ModuleFactory };
 //////////////////////////////////////////////////////////
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
-#define ACCEL_INT_PIN 0
-#define TIP_INT_PIN 1
+#define ACCEL_INT_PIN 1
+#define TIP_INT_PIN 0
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
@@ -104,12 +106,12 @@ void wakeUpTip()
 {
   detachInterrupt(TIP_INT_PIN);
   interruptTime = millis();
-  if (interruptTime - lastInterruptTime > 200)
+  if (interruptTime - lastInterruptTime > 100)
   {
     tipFlag = true;
     tipCount++;
+    lastInterruptTime = interruptTime;
   }
-  lastInterruptTime = interruptTime;
 }
 
 //RTC Wake Interrupt
@@ -126,6 +128,7 @@ void setup()
         // perform cleanup here
   }
   Serial.begin(9600);
+//  while(!Serial);
   FeatherFault::PrintFault(Serial);
   Serial.flush();
   FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
@@ -450,6 +453,20 @@ void printBufferToScreen(){
 
     Loom.add_data("T_BM", "M", moisture);
     Loom.add_data("T_BT", "T", temp); 
+//    Loom.add_data("T_B", "M", buffer);
+    terosCounter = 3;
+  }
+  else if (terosCounter == 3) 
+  {
+    buffer.toCharArray(buf, 16);
+    strtokIndx = strtok(buf,",");      // get the first part - the string
+    moisture = atof(strtokIndx);     // convert this part to a float
+ 
+    strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
+    temp = atof(strtokIndx);     // convert this part to an integer
+
+    Loom.add_data("T_CM", "M", moisture);
+    Loom.add_data("T_CT", "T", temp); 
 //    Loom.add_data("T_B", "M", buffer);
     terosCounter = 1;
   }

@@ -85,19 +85,19 @@ void json_to_struct(const JsonObjectConst& data, SitkaNet_t& out) {
 	// vbatt
 	get_data_point_from_contents(contents, "Analog", "Vbat", out.data.vbatt);
 	// STEMMA moisture
-	const char* stemma_names[] = { "STEMMA_0", "STEMMA_1", "STEMMA_2", "STEMMA_3" };
-	for (uint8_t i = 0; i < 4; i++)
+	const char* stemma_names[] = { "STEMMA_0", "STEMMA_1", "STEMMA_2" };
+	for (uint8_t i = 0; i < 3; i++)
 		get_data_point_from_contents(contents, stemma_names[i], "capactive", out.data.stemmaMoisture[i]);
 	// STEMMA temp
-	for (uint8_t i = 0; i < 4; i++)
+	for (uint8_t i = 0; i < 3; i++)
 		get_data_point_from_contents(contents, stemma_names[i], "temperature", out.data.stemmaTemp[i]);
 	// Terros moisture
-	const char* teros_moisture_names[] = { "T_AM", "T_BM", };
-	for (uint8_t i = 0; i < 2; i++)
+	const char* teros_moisture_names[] = { "T_AM", "T_BM", "T_CM" };
+	for (uint8_t i = 0; i < 3; i++)
 		get_data_point_from_contents(contents, teros_moisture_names[i], "M", out.data.terrosMoisture[i]);
 	// Teros temperature
-	const char* teros_temp_names[] = { "T_AT", "T_BT", };
-	for (uint8_t i = 0; i < 2; i++)
+	const char* teros_temp_names[] = { "T_AT", "T_BT", "T_CT" };
+	for (uint8_t i = 0; i < 3; i++)
 		get_data_point_from_contents(contents, teros_temp_names[i], "T", out.data.terrosTemp[i]);
 	// MS5803 Pressure
 	const char* ms5803_names[] = { "MS5803_4", "MS5803_5" };
@@ -150,21 +150,21 @@ void struct_to_json(const SitkaNet_t& in, const JsonObject& out) {
 		data["Number"] = in.data.pktnumber;
 	}
 	// stemma
-	const char* stemma_names[] = { "STEMMA_0", "STEMMA_1", "STEMMA_2", "STEMMA_3" };
-	for (uint8_t i = 0; i < 4; i++) {
+	const char* stemma_names[] = { "STEMMA_0", "STEMMA_1", "STEMMA_2" };
+	for (uint8_t i = 0; i < 3; i++) {
 		const JsonObject data = make_module_object(contents, stemma_names[i]);
 		data["capacitive"] = in.data.stemmaMoisture[i];
 		data["temperature"] = in.data.stemmaTemp[i];
 	}
 	// Teros moisture
-	const char* teros_temp_names[] = { "T_AT", "T_BT" };
-	for (uint8_t i = 0; i < 2; i++) {
+	const char* teros_temp_names[] = { "T_AT", "T_BT", "T_CM" };
+	for (uint8_t i = 0; i < 3; i++) {
 		const JsonObject data = make_module_object(contents, teros_temp_names[i]);
 		data["T"] = in.data.terrosTemp[i];
 	}
 	// Teros tempurature
-	const char* teros_moisture_names[] = { "T_AM", "T_BM" };
-	for (uint8_t i = 0; i < 2; i++) {
+	const char* teros_moisture_names[] = { "T_AM", "T_BM", "T_CM" };
+	for (uint8_t i = 0; i < 3; i++) {
 		const JsonObject data = make_module_object(contents, teros_moisture_names[i]);
 		data["M"] = in.data.terrosMoisture[i];
 	}
