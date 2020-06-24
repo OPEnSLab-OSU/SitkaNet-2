@@ -2,7 +2,7 @@
 	'general':\
 	{\
 		'name':'Corvallis',\
-		'instance':3,\
+		'instance':1,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\

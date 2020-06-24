@@ -106,7 +106,7 @@ void wakeUpTip()
 {
   detachInterrupt(TIP_INT_PIN);
   interruptTime = millis();
-  if (interruptTime - lastInterruptTime > 100)
+  if (interruptTime - lastInterruptTime > 200)
   {
     tipFlag = true;
     tipCount++;
@@ -255,14 +255,15 @@ void loop()
   MARK;
   Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   MARK;
+  Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
   //Go to sleep if accelerometer is not triggered
   MARK;
   if (accelFlag < 3)
   {
     digitalWrite(5, HIGH); // Turn off 3.3V rail
-    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
-    pinMode(24, INPUT);
-    pinMode(10, INPUT);
+//    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
+//    pinMode(24, INPUT);
+//    pinMode(10, INPUT);
     Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 5, 0));
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
