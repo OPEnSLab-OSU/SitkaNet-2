@@ -2,6 +2,9 @@
 
 Version 2 of SitkaNet
 
+Project Wiki:
+https://github.com/OPEnSLab-OSU/OPEnS-Lab-Home/wiki/SitkaNet
+
 Built using LOOM:
 https://github.com/OPEnSLab-OSU/Loom
 
