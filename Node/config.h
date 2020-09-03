@@ -1,8 +1,8 @@
 "{\
 	'general':\
 	{\
-		'name':'Corvallis',\
-		'instance':1,\
+		'name':'Sitka',\
+		'instance':6,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\
