@@ -30,7 +30,7 @@ const char* json_config =
 
 // Set enabled modules
 LoomFactory<
-	Enable::Internet::All,
+	Enable::Internet::Ethernet,
 	Enable::Sensors::Enabled,
 	Enable::Radios::Enabled,
 	Enable::Actuators::Disabled,
@@ -47,7 +47,7 @@ void setup()
         // perform cleanup here
   }
   Serial.begin(9600);
-//  while(!Serial)
+  while(!Serial)
   FeatherFault::PrintFault(Serial);
   Serial.flush();
   FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
@@ -74,9 +74,18 @@ void loop()
     struct_to_json(in_data, internal_json);
 	  MARK;
 		Loom.display_data();
+     MARK;
+    // added from example
+    if(Loom.SDCARD().is_active()){
+        Loom.SDCARD().log();
+    }
+    else{
+          Serial.println("NO SD CARD FOUND");
+    }    
+    //
 		  MARK;
 		Loom.GoogleSheets().publish();
-		  MARK;
+		  MARK;     
 	}
 	  MARK;
 }

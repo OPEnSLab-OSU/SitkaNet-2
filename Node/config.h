@@ -1,8 +1,8 @@
 "{\
 	'general':\
 	{\
-		'name':'Sitka',\
-		'instance':6,\
+		'name':'Corvallis',\
+		'instance':7,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\
@@ -33,7 +33,7 @@
 		},\
 		{\
 			'name':'SD',\
-			'params': 'default'\
+      'params':[true,1000,10,'datafile',false]\
 		},\
 		{\
 			'name':'DS3231',\
@@ -54,8 +54,8 @@
       'name':'LoRa',\
       'params':[\
         255,\
-        4,\
-        23,\
+        7,\
+        20,\
         3,\
         200\
       ]\

@@ -157,7 +157,7 @@ void struct_to_json(const SitkaNet_t& in, const JsonObject& out) {
 		data["temperature"] = in.data.stemmaTemp[i];
 	}
 	// Teros moisture
-	const char* teros_temp_names[] = { "T_AT", "T_BT", "T_CM" };
+	const char* teros_temp_names[] = { "T_AT", "T_BT", "T_CT" };
 	for (uint8_t i = 0; i < 3; i++) {
 		const JsonObject data = make_module_object(contents, teros_temp_names[i]);
 		data["T"] = in.data.terrosTemp[i];

@@ -7,7 +7,7 @@
 	'components':[\
 		{\
 			'name':'LoRa',\
-			'params':[255,3,23,3,200]\
+			'params':[255,3,20,3,200]\
 		},\
     {\
       'name':'Ethernet',\
@@ -16,6 +16,10 @@
         [2,159,207,101,116,126],\
         [192,168,0,1]\
       ]\
+    },\
+    {\
+      'name':'SD',\
+      'params':[true,1000,10,'datafile',false]\
     },\
     {\
       'name':'GoogleSheets',\

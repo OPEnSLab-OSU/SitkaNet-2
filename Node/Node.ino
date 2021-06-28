@@ -33,8 +33,8 @@ LoomFactory<
 	Enable::Internet::Disabled,
 	Enable::Sensors::Enabled,
 	Enable::Radios::Enabled,
-	Enable::Actuators::Enabled,
-	Enable::Max::Enabled
+	Enable::Actuators::Disabled,
+	Enable::Max::Disabled
 > ModuleFactory{};
 
 LoomManager Loom{ &ModuleFactory };
@@ -42,16 +42,16 @@ LoomManager Loom{ &ModuleFactory };
 //////////////////////////////////////////////////////////
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
-#define ACCEL_INT_PIN 1
+//#define ACCEL_INT_PIN 1
 #define TIP_INT_PIN 0
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
 void clear_alarms();
 
-void configInterrupts(Adafruit_MMA8451 device);
-void mmaPrintIntSRC(uint8_t dataRead);
-void mmaSetupSlideSentinel();
+//void configInterrupts(Adafruit_MMA8451 device);
+//void mmaPrintIntSRC(uint8_t dataRead);
+//void mmaSetupSlideSentinel();
 
 byte charToDec(char i);
 void printInfo(char i);
@@ -63,9 +63,9 @@ boolean setTaken(byte i);
 
 //////////////////////////////////////////////////////////
 /* global variable declarations */ 
-Adafruit_MMA8451 mma = Adafruit_MMA8451();
-int accelFlag = 0;
-sensors_event_t event; 
+//Adafruit_MMA8451 mma = Adafruit_MMA8451();
+//int accelFlag = 0;
+//sensors_event_t event; 
 
 SDI12 mySDI12(SDI_PIN);
 String buffer = "";
@@ -95,11 +95,11 @@ unsigned long interruptTime = 0;
 
 //////////////////////////////////////////////////////////
 //MMA Accelerometer ISR
-void wakeUpAccel()
+/*void wakeUpAccel()
 {
   detachInterrupt(ACCEL_INT_PIN);
   accelFlag++;
-}
+}*/
 
 //Tipping Bucket ISR
 void wakeUpTip()
@@ -128,7 +128,7 @@ void setup()
         // perform cleanup here
   }
   Serial.begin(9600);
-//  while(!Serial);
+  while(!Serial);
   FeatherFault::PrintFault(Serial);
   Serial.flush();
   FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
@@ -137,7 +137,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(RTC_INT_PIN, INPUT_PULLUP);
   pinMode(TIP_INT_PIN, INPUT_PULLUP);
-  pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
+//  pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
   MARK;
 	// Needs to be done for Hypnos Board
 	pinMode(5, OUTPUT);		// Enable control of 3.3V rail 
@@ -167,16 +167,16 @@ void setup()
     }
   }
   MARK;
-  mmaSetupSlideSentinel();
+  //mmaSetupSlideSentinel();
   MARK;
-  accelFlag = 0;
-  configInterrupts(mma);
+//  accelFlag = 0;
+  //configInterrupts(mma);
   MARK;
   Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
   Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
-  Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
-  MARK;
-  mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
+  //Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
+  //MARK;
+  //mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
   MARK;
 	LPrintln("\n ** Setup Complete ** ");
   MARK;
@@ -205,7 +205,7 @@ void loop()
     MARK;
     // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
     MARK;
-    if(accelFlag > 0){
+    /*if(accelFlag > 0){
         Serial.println("Interrupt triggered");   
         uint8_t dataRead = mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
         mmaPrintIntSRC(dataRead);
@@ -215,7 +215,7 @@ void loop()
 //        Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
         EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
     }
-    MARK;
+    MARK;*/
     Loom.power_up();
     MARK;
     Loom.measure();
@@ -231,7 +231,7 @@ void loop()
     }
     MARK;
     Loom.add_data("Tip", "Count", tipCount);
-    Loom.add_data("Accel", "Count", accelFlag);
+//    Loom.add_data("Accel", "Count", accelFlag);
     Loom.add_data("rssi", "value", Loom.LoRa().get_rssi());
     Loom.display_data();
     // Log using default filename as provided in configuration
@@ -253,13 +253,13 @@ void loop()
     MARK;
   }
   MARK;
-  Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
-  MARK;
+  //Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
+  //MARK;
   Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
   //Go to sleep if accelerometer is not triggered
   MARK;
-  if (accelFlag < 3)
-  {
+  //if (accelFlag < 3)
+  //{
     digitalWrite(5, HIGH); // Turn off 3.3V rail
 //    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
 //    pinMode(24, INPUT);
@@ -268,14 +268,14 @@ void loop()
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
     Loom.SleepManager().sleep();
-  }
+  //}
   MARK;
 }
 
 //////////////////////////////////////////////////////////
 // comment/uncomment these to enable functionality described
 /* Transient detection donfiguration for mma accelerometer, use this format and Adafruit_MMA8451::writeRegister8_public to configure registers */
-void configInterrupts(Adafruit_MMA8451 device){
+/*void configInterrupts(Adafruit_MMA8451 device){
     uint8_t dataToWrite = 0;
 
     // MMA8451_REG_CTRL_REG3
@@ -341,10 +341,10 @@ void configInterrupts(Adafruit_MMA8451 device){
     device.writeRegister8_public(MMA8451_REG_TRANSIENT_CT, dataToWrite);
 
     dataToWrite = 0;    
-}
+}*/
 
 /* Setup for mma use with Slide Sentinel, other use cases will be pretty similar */
-void mmaSetupSlideSentinel(){
+/*void mmaSetupSlideSentinel(){
   if (! mma.begin()) {
     Serial.println("Couldnt start");
     //while (1); 
@@ -358,10 +358,10 @@ void mmaSetupSlideSentinel(){
   Serial.print("Range = "); Serial.print(2 << mma.getRange()); Serial.println("G");
 
   while (mma.readRegister8(MMA8451_REG_CTRL_REG2) & 0x40);
-}
+}*/
 
 
-void mmaPrintIntSRC(uint8_t dataRead){
+/*void mmaPrintIntSRC(uint8_t dataRead){
     if(dataRead & 0x40) Serial.println("Event Active");
     if(dataRead & 0x20){
         Serial.println("\tZ event");
@@ -378,7 +378,7 @@ void mmaPrintIntSRC(uint8_t dataRead){
         if(dataRead & 0x01) Serial.println("\t\tX Negative g");
         else Serial.println("\t\tX Positive g");
     }
-}
+}*/
 
 // converts allowable address characters '0'-'9', 'a'-'z', 'A'-'Z',
 // to a decimal number between 0 and 61 (inclusive) to cover the 62 possible addresses
