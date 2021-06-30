@@ -20,8 +20,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <Loom.h>
-#include "SitkaNetJSON.h"
-#include "FeatherFault.h"
+//#include "SitkaNetJSON.h"
+//#include "FeatherFault.h"
 
 // Include configuration
 const char* json_config = 
@@ -31,7 +31,7 @@ const char* json_config =
 // Set enabled modules
 LoomFactory<
 	Enable::Internet::Ethernet,
-	Enable::Sensors::Enabled,
+	Enable::Sensors::Disabled,
 	Enable::Radios::Enabled,
 	Enable::Actuators::Disabled,
 	Enable::Max::Disabled
@@ -39,53 +39,51 @@ LoomFactory<
 
 LoomManager Loom{ &ModuleFactory };
 
-
-
 void setup() 
-{ 
-	  if (FeatherFault::DidFault()) {
+{ /*
+	if (FeatherFault::DidFault()) {
         // perform cleanup here
-  }
+  } 
   Serial.begin(9600);
-  while(!Serial)
+//  while(!Serial)
   FeatherFault::PrintFault(Serial);
   Serial.flush();
   FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
   MARK;
+  */
+
+  // for Hypnos with ethernet stacked on sensor rail
+  pinMode(5, OUTPUT);    // Enable control of 3.3V rail
+  pinMode(6, OUTPUT);   // Enable control of 5V rail
+  digitalWrite(5, LOW); // Enable 3.3V rail
+  digitalWrite(6, HIGH);  // Enable 5V rail
+  
 	Loom.begin_serial();
-	  MARK;
+	 // MARK;
 	Loom.parse_config(json_config);
-	  MARK;
+	 // MARK;
 	Loom.print_config();
-	  MARK;
+	 // MARK;
 
 	LPrintln("\n ** Setup Complete ** ");
-	  MARK;
+	 // MARK;
 }
 
 void loop() 
-{
-	  MARK;
-  SitkaNet_t in_data;
-	if (Loom.LoRa().receive_blocking_raw(in_data.raw, sizeof(in_data.raw), 1000)) {
-      MARK;
-	JsonObject internal_json = Loom.internal_json(true);
-	  MARK;
-    struct_to_json(in_data, internal_json);
-	  MARK;
+{ 
+	if (Loom.LoRa().receive_blocking(10000)) {
+  // MARK;
 		Loom.display_data();
-     MARK;
-    // added from example
-    if(Loom.SDCARD().is_active()){
-        Loom.SDCARD().log();
+/*  if(Loom.SDCARD().get_active()){
+          Loom.SDCARD().log();
     }
     else{
           Serial.println("NO SD CARD FOUND");
-    }    
-    //
-		  MARK;
-		Loom.GoogleSheets().publish();
-		  MARK;     
-	}
-	  MARK;
+    }*/
+	//	MARK;
+    if(!Loom.GoogleSheets().publish()) {
+          Serial.println("Failed to print to Gsheets");
+   // MARK;
+    }
+  }
 }

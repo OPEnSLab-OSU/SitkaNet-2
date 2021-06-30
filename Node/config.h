@@ -33,14 +33,11 @@
 		},\
 		{\
 			'name':'SD',\
-      'params':[true,1000,10,'datafile',false]\
+			'params': 'default'\
 		},\
 		{\
 			'name':'DS3231',\
-			'params':[\
-        12,\
-        false\
-      ]\
+			'params':[10, false, false]\
 		},\
     {\
       'name':'Interrupt_Manager',\
