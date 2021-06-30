@@ -3,7 +3,6 @@
 #include <Adafruit_Sensor.h>
 #include "SDI12.h"
 #include "wiring_private.h" // pinPeripheral() function
-#include "SitkaNetJSON.h"
 #include "FeatherFault.h"
 
 // Include configuration
@@ -197,9 +196,7 @@ void loop()
     pinMode(23, INPUT); //Disable SD card pins to prevent current leak
     pinMode(24, INPUT);
     pinMode(10, INPUT);
-    LPrintln("A");
     Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0,0,2,0));
-    LPrintln("B");
     
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
