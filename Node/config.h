@@ -1,8 +1,8 @@
 "{\
 	'general':\
 	{\
-		'name':'Sitka',\
-		'instance':6,\
+		'name':'Corvallis',\
+		'instance':7,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\
@@ -37,10 +37,7 @@
 		},\
 		{\
 			'name':'DS3231',\
-			'params':[\
-        12,\
-        false\
-      ]\
+			'params':[10, false, false]\
 		},\
     {\
       'name':'Interrupt_Manager',\
@@ -54,8 +51,8 @@
       'name':'LoRa',\
       'params':[\
         255,\
-        4,\
-        23,\
+        7,\
+        20,\
         3,\
         200\
       ]\

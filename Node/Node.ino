@@ -1,26 +1,8 @@
-
-
-///////////////////////////////////////////////////////////////////////////////
-// This is a basic example that demonstrates usage of the Hypnos board.
-
-// The Hypnos board includes
-// - SD
-// - DS3231 RTC
-// - Ability to power of peripherals
-
-// Further details about the Hypnos board can be found here:
-// https://github.com/OPEnSLab-OSU/OPEnS-Lab-Home/wiki/Hypnos
-
-///////////////////////////////////////////////////////////////////////////////
-
 #include <Loom.h>
 #include <Wire.h>
-#include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
 #include "SDI12.h"
-//#include <EnableInterrupt.h>
 #include "wiring_private.h" // pinPeripheral() function
-#include "SitkaNetJSON.h"
 #include "FeatherFault.h"
 
 // Include configuration
@@ -30,11 +12,11 @@ const char* json_config =
 
 // Set enabled modules
 LoomFactory<
-	Enable::Internet::Disabled,
-	Enable::Sensors::Enabled,
-	Enable::Radios::Enabled,
-	Enable::Actuators::Enabled,
-	Enable::Max::Enabled
+  Enable::Internet::Disabled,
+  Enable::Sensors::Enabled,
+  Enable::Radios::Enabled,
+  Enable::Actuators::Disabled,
+  Enable::Max::Disabled
 > ModuleFactory{};
 
 LoomManager Loom{ &ModuleFactory };
@@ -42,17 +24,11 @@ LoomManager Loom{ &ModuleFactory };
 //////////////////////////////////////////////////////////
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
-#define ACCEL_INT_PIN 1
 #define TIP_INT_PIN 0
 
 //////////////////////////////////////////////////////////
 /* function declarations */ 
 void clear_alarms();
-
-void configInterrupts(Adafruit_MMA8451 device);
-void mmaPrintIntSRC(uint8_t dataRead);
-void mmaSetupSlideSentinel();
-
 byte charToDec(char i);
 void printInfo(char i);
 void printBufferToScreen();
@@ -60,12 +36,10 @@ void takeMeasurement(char i);
 boolean checkActive(char i);
 boolean isTaken(byte i);
 boolean setTaken(byte i);
+volatile bool rtc_flag = false;
 
 //////////////////////////////////////////////////////////
 /* global variable declarations */ 
-Adafruit_MMA8451 mma = Adafruit_MMA8451();
-int accelFlag = 0;
-sensors_event_t event; 
 
 SDI12 mySDI12(SDI_PIN);
 String buffer = "";
@@ -94,12 +68,6 @@ unsigned long lastInterruptTime = 0;
 unsigned long interruptTime = 0;
 
 //////////////////////////////////////////////////////////
-//MMA Accelerometer ISR
-void wakeUpAccel()
-{
-  detachInterrupt(ACCEL_INT_PIN);
-  accelFlag++;
-}
 
 //Tipping Bucket ISR
 void wakeUpTip()
@@ -118,38 +86,29 @@ void wakeUpTip()
 void wakeUpRTC()
 {
   detachInterrupt(RTC_INT_PIN);
+  rtc_flag = true;
 }
 //////////////////////////////////////////////////////////
 
 void setup() 
 {
-  //FeatherFault initialization
-  if (FeatherFault::DidFault()) {
-        // perform cleanup here
-  }
-  Serial.begin(9600);
-//  while(!Serial);
-  FeatherFault::PrintFault(Serial);
-  Serial.flush();
-  FeatherFault::StartWDT(FeatherFault::WDTTimeout::WDT_8S);
-  
-  MARK;
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(RTC_INT_PIN, INPUT_PULLUP);
   pinMode(TIP_INT_PIN, INPUT_PULLUP);
-  pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
   MARK;
-	// Needs to be done for Hypnos Board
-	pinMode(5, OUTPUT);		// Enable control of 3.3V rail 
+  // Needs to be done for Hypnos Board
+  pinMode(5, OUTPUT);   // Enable control of 3.3V rail 
+  pinMode(6, OUTPUT);   // Enable control of 5V rail 
   MARK;
-	//See Above
-	digitalWrite(5, LOW);	// Enable 3.3V rail
+  //See Above
+  digitalWrite(5, LOW); // Enable 3.3V rail
+  digitalWrite(6, HIGH); // Enable 5V rail
   MARK;
-	Loom.begin_serial(true);
-	Loom.parse_config(json_config);
-	Loom.print_config();
+  Loom.begin_serial(true);
+  Loom.parse_config(json_config);
+  Loom.print_config();
   MARK;
-  mySDI12.begin();
+	mySDI12.begin();			  
   delay(500); // allow things to settle
   MARK;
   Serial.println("Scanning all addresses, please wait...");
@@ -167,18 +126,10 @@ void setup()
     }
   }
   MARK;
-  mmaSetupSlideSentinel();
-  MARK;
-  accelFlag = 0;
-  configInterrupts(mma);
-  MARK;
   Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
   Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
-  Loom.InterruptManager().register_ISR(ACCEL_INT_PIN, wakeUpAccel, LOW, ISR_Type::IMMEDIATE);
   MARK;
-  mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
-  MARK;
-	LPrintln("\n ** Setup Complete ** ");
+  LPrintln("\n ** Setup Complete ** ");
   MARK;
 }
 
@@ -195,26 +146,14 @@ void loop()
   { 
     MARK;        
     digitalWrite(LED_BUILTIN, HIGH);
-//    while(!Serial){}
     digitalWrite(5, LOW); // Enable 3.3V rail
-//    pinMode(10, OUTPUT); //Enable SD card pins
-//    pinMode(23, OUTPUT);
-//    pinMode(24, OUTPUT);
+    digitalWrite(6, HIGH);
+    
+    pinMode(10, OUTPUT); //Enable SD card pins
+    pinMode(23, OUTPUT);
+    pinMode(24, OUTPUT);
     MARK;
     Loom.DS3231().clear_alarms();
-    MARK;
-    // perform any bigger interrupt related actions here, this will just print some info to show what interrupted the accel
-    MARK;
-    if(accelFlag > 0){
-        Serial.println("Interrupt triggered");   
-        uint8_t dataRead = mma.readRegister8(MMA8451_REG_TRANSIENT_SRC); //clear the interrupt register
-        mmaPrintIntSRC(dataRead);
-    MARK;    
-        // reattach the interrupt, can be done anywhere in code, but only after the interrupt has triggered and detached
-//        pinMode(ACCEL_INT_PIN, INPUT_PULLUP);
-//        Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
-        EIC->INTFLAG.reg = 0x01ff; // clear interrupt flag pending
-    }
     MARK;
     Loom.power_up();
     MARK;
@@ -231,154 +170,44 @@ void loop()
     }
     MARK;
     Loom.add_data("Tip", "Count", tipCount);
-    Loom.add_data("Accel", "Count", accelFlag);
-    Loom.add_data("rssi", "value", Loom.LoRa().get_rssi());
+    Loom.add_data("rssi", "value", Loom.LoRa().get_signal_strength());
     Loom.display_data();
     // Log using default filename as provided in configuration
-//    Loom.SDCARD().power_up(10);
-//
-    if(Loom.SDCARD().is_active()){
-          Loom.SDCARD().log();
-    }
-    else{
+	if(Loom.SDCARD().get_active()){					  
+		Loom.SDCARD().log();
+	}
+		else{
           Serial.println("NO SD CARD FOUND");
-    }
+    } 
     MARK;
-    // Send to address 3
-    SitkaNet_t out_struct;
-    const JsonObjectConst internal_data = Loom.internal_json(false);
-    json_to_struct(internal_data, out_struct);
-    MARK;
-    Loom.LoRa().send_raw(out_struct.raw, sizeof(out_struct.raw), 3);
+
+    Loom.display_data();
+    // Send to address 0    
+    Loom.LoRa().send(0);
     MARK;
   }
-  MARK;
-  Loom.InterruptManager().reconnect_interrupt(ACCEL_INT_PIN);
   MARK;
   Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
   //Go to sleep if accelerometer is not triggered
   MARK;
-  if (accelFlag < 3)
-  {
     digitalWrite(5, HIGH); // Turn off 3.3V rail
-//    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
-//    pinMode(24, INPUT);
-//    pinMode(10, INPUT);
-    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, 5, 0));
+    digitalWrite(6, LOW);
+    
+    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
+    pinMode(24, INPUT);
+    pinMode(10, INPUT);
+    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0,0,2,0));
+    
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
+    rtc_flag = false;
     Loom.SleepManager().sleep();
-  }
+    while (!rtc_flag);
   MARK;
 }
-
 //////////////////////////////////////////////////////////
 // comment/uncomment these to enable functionality described
 /* Transient detection donfiguration for mma accelerometer, use this format and Adafruit_MMA8451::writeRegister8_public to configure registers */
-void configInterrupts(Adafruit_MMA8451 device){
-    uint8_t dataToWrite = 0;
-
-    // MMA8451_REG_CTRL_REG3
-    // Interrupt control register
-
-    //dataToWrite |= 0x80;    // FIFO gate option for wake/sleep transition, default 0
-    dataToWrite |= 0x40;    // Wake from transient interrupt enable
-    //dataToWrite |= 0x20;    // Wake from orientation interrupt enable
-    //dataToWrite |= 0x10;    // Wake from Pulse function enable
-    //dataToWrite |= 0x08;    // Wake from freefall/motion decect interrupt
-    //dataToWrite |= 0x02;    // Interrupt polarity 1 = active high
-    dataToWrite |= 0x01;    // (0) Push/pull or (1) open drain interrupt, determines whether bus is driven by device, or left to hang
-
-    device.writeRegister8_public(MMA8451_REG_CTRL_REG3, dataToWrite);
-
-    dataToWrite = 0;
-
-    // MMA8451_REG_CTRL_REG4
-    // Interrupt enable register, enables interrupts that are not commented
-
-    //dataToWrite |= 0x80;    // Auto sleep/wake interrupt
-    //dataToWrite |= 0x40;    // FIFO interrupt
-    dataToWrite |= 0x20;    // Transient interrupt - enabled
-    //dataToWrite |= 0x10;    // orientation
-    //dataToWrite |= 0x08;    // Pulse interrupt
-    //dataToWrite |= 0x04;    // Freefall interrupt
-    dataToWrite |= 0x01;    // data ready interrupt, MUST BE ENABLED FOR USE WITH ARDUINO
-    device.writeRegister8_public(MMA8451_REG_CTRL_REG4, dataToWrite | 0x01);
-    
-    dataToWrite = 0;
-
-    // MMA8451_REG_CTRL_REG5
-    // Interrupt pin configuration register, select interrupt on pin 0 or pin 1
-    // see datasheet for register's description, ths int routed to pin 2
-
-    device.writeRegister8_public(MMA8451_REG_CTRL_REG5, dataToWrite | 0x01);
-
-    dataToWrite = 0;
-    
-    // MMA8451_REG_TRANSIENT_CFG
-    dataToWrite |= 0x10;  // Latch enable to capture accel values when interrupt occurs
-    dataToWrite |= 0x08;    // Z transient interrupt enable
-    dataToWrite |= 0x04;    // Y transient interrupt enable
-    dataToWrite |= 0x02;    // X transient interrupt enable
-    //dataToWrite |= 0x01;    // High-pass filter bypass
-    device.writeRegister8_public(MMA8451_REG_TRANSIENT_CFG, dataToWrite);
-
-    Serial.print("MMA8451_REG_TRANSIENT_CFG: ");
-    Serial.println(device.readRegister8(MMA8451_REG_TRANSIENT_CFG), HEX);
-    
-    dataToWrite = 0;
-
-    // MMA8451_REG_TRANSIENT_THS
-    // Transient interrupt threshold in units of .06g
-    //Acceptable range is 1-127
-    dataToWrite = 0x20; //2g threshold
-    device.writeRegister8_public(MMA8451_REG_TRANSIENT_THS, dataToWrite);
-
-    dataToWrite = 0;
-
-    // MMA8451_REG_TRANSIENT_CT  0x20
-    dataToWrite = 0; // value is 0-255 for numer of counts to debounce for, depends on ODR
-    device.writeRegister8_public(MMA8451_REG_TRANSIENT_CT, dataToWrite);
-
-    dataToWrite = 0;    
-}
-
-/* Setup for mma use with Slide Sentinel, other use cases will be pretty similar */
-void mmaSetupSlideSentinel(){
-  if (! mma.begin()) {
-    Serial.println("Couldnt start");
-    //while (1); 
-  }
-  
-  Serial.println("MMA8451 found!");
-
-  // library configurations
-  mma.setRange(MMA8451_RANGE_2_G);
-  mma.setDataRate(MMA8451_DATARATE_6_25HZ);
-  Serial.print("Range = "); Serial.print(2 << mma.getRange()); Serial.println("G");
-
-  while (mma.readRegister8(MMA8451_REG_CTRL_REG2) & 0x40);
-}
-
-
-void mmaPrintIntSRC(uint8_t dataRead){
-    if(dataRead & 0x40) Serial.println("Event Active");
-    if(dataRead & 0x20){
-        Serial.println("\tZ event");
-        if(dataRead & 0x10) Serial.println("\t\tZ Negative g");
-        else Serial.println("\t\tZ Positive g");
-    }
-    if(dataRead & 0x08){
-        Serial.println("\tY event");
-        if(dataRead & 0x04) Serial.println("\t\tY Negative g");
-        else Serial.println("\t\tY Positive g");
-    }
-    if(dataRead & 0x02){
-        Serial.println("\tX event");
-        if(dataRead & 0x01) Serial.println("\t\tX Negative g");
-        else Serial.println("\t\tX Positive g");
-    }
-}
 
 // converts allowable address characters '0'-'9', 'a'-'z', 'A'-'Z',
 // to a decimal number between 0 and 61 (inclusive) to cover the 62 possible addresses
@@ -403,16 +232,18 @@ void printInfo(char i){
     if(mySDI12.available()) mySDI12.read();
   }
 
-  while(mySDI12.available()){
+   while(mySDI12.available()){
     char c = mySDI12.read();
     if((c!='\n') && (c!='\r')) Serial.write(c);
     delay(5);
   }
+
 }
 
 void printBufferToScreen(){
   mySDI12.read(); // consume address
   mySDI12.read(); // consume address
+  
   while(mySDI12.available()){
     char c = mySDI12.read();
     if(c == '+' || c == '-'){
@@ -499,13 +330,15 @@ void takeMeasurement(char i){
   // int numMeasurements =  sdiResponse.substring(4,5).toInt();
 
   unsigned long timerStart = millis();
-  while((millis() - timerStart) < (1000 * wait)){
+  
+   while((millis() - timerStart) < (1000 * wait)){
     if(mySDI12.available())  // sensor can interrupt us to let us know it is done early
     {
       mySDI12.clearBuffer();
       break;
     }
   }
+  
   // Wait for anything else and clear it out
   delay(30);
   mySDI12.clearBuffer();

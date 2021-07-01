@@ -1,14 +1,14 @@
 "{\
-	'general':\
-	{\
-		'name':'Device',\
-		'instance':1\
-	},\
-	'components':[\
-		{\
-			'name':'LoRa',\
-			'params':[255,3,23,3,200]\
-		},\
+  'general':\
+  {\
+    'name':'Device',\
+    'instance':1\
+  },\
+  'components':[\
+    {\
+      'name':'LoRa',\
+      'params':[255,0,20,3,200]\
+    },\
     {\
       'name':'Ethernet',\
       'params':[\
@@ -28,5 +28,5 @@
         '<your-tab-name>'\
       ]\
     }\
-	]\
+  ]\
 }"
