@@ -196,7 +196,7 @@ void loop()
     pinMode(23, INPUT); //Disable SD card pins to prevent current leak
     pinMode(24, INPUT);
     pinMode(10, INPUT);
-    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0,0,2,0));
+    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0,0,0,10));
     
     Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
     digitalWrite(LED_BUILTIN, LOW);
