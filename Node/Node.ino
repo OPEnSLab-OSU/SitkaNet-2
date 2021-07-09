@@ -22,6 +22,9 @@ LoomFactory<
 LoomManager Loom{ &ModuleFactory };
 
 //////////////////////////////////////////////////////////
+#define DELAY_IN_MINUTES 15
+#define DELAY_IN_SECONDS 0
+#define HUB_LORA_ADDRESS 3
 #define SDI_PIN 11
 #define RTC_INT_PIN 12
 #define TIP_INT_PIN 0
@@ -161,13 +164,13 @@ void loop()
     Loom.package();
     delay(100);
     MARK;
-/*     // scan address space 0-9
+    // scan address space 0-9
     for(char i = 'A'; i <= 'D'; i++) if(isTaken(i)){
       printInfo(i);
       Serial.print("\t");
       takeMeasurement(i);
       Serial.println();
-    }*/
+    }
     MARK;
     Loom.add_data("Tip", "Count", tipCount);
     Loom.add_data("rssi", "value", Loom.LoRa().get_signal_strength());
@@ -181,26 +184,33 @@ void loop()
     } 
     MARK;
 
-    Loom.display_data();
-    // Send to address 3    
-    Loom.LoRa().send(3);
+    // Send to hub lora address HUB_LORA_ADDRESS
+    Loom.LoRa().send(HUB_LORA_ADDRESS);
     MARK;
   }
-  MARK;
-  Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
+
   //Go to sleep if accelerometer is not triggered
   MARK;
-    digitalWrite(5, HIGH); // Turn off 3.3V rail
-    digitalWrite(6, LOW);
-    
-    pinMode(23, INPUT); //Disable SD card pins to prevent current leak
-    pinMode(24, INPUT);
-    pinMode(10, INPUT);
-    Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0,0,15,0));
-    
-    Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
-    digitalWrite(LED_BUILTIN, LOW);
-    rtc_flag = false;
+  Loom.InterruptManager().RTC_alarm_duration(TimeSpan(0, 0, DELAY_IN_MINUTES, DELAY_IN_SECONDS));
+  MARK;
+  Loom.InterruptManager().reconnect_interrupt(RTC_INT_PIN);
+  MARK;
+  Loom.InterruptManager().reconnect_interrupt(TIP_INT_PIN);
+
+  Loom.power_down();
+  
+  digitalWrite(LED_BUILTIN, LOW);
+  
+  rtc_flag = false;
+  
+  pinMode(23, INPUT); //Disable SD card pins to prevent current leak
+  pinMode(24, INPUT);
+  pinMode(10, INPUT);
+
+  digitalWrite(5, HIGH); // Turn off 3.3V rail
+															 
+  digitalWrite(6, LOW);
+  
     Loom.SleepManager().sleep();
     while (!rtc_flag);
   MARK;
