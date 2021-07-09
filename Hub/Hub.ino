@@ -20,7 +20,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <Loom.h>
-//#include "SitkaNetJSON.h"
 //#include "FeatherFault.h"
 
 // Include configuration
@@ -71,7 +70,7 @@ void setup()
 
 void loop() 
 { 
-	if (Loom.LoRa().receive_blocking(10000)) {
+	if (Loom.LoRa().receive_blocking(5000)) {
   // MARK;
 		Loom.display_data();
 /*  if(Loom.SDCARD().get_active()){
