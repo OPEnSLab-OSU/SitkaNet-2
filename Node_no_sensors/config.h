@@ -1,8 +1,8 @@
 "{\
 	'general':\
 	{\
-		'name':'Corvallis',\
-		'instance':7,\
+		'name':'Test',\
+		'instance':8,\
 		'interval':1000,\
 		'print_verbosity':2\
 	},\
@@ -33,7 +33,7 @@
 		},\
 		{\
 			'name':'DS3231',\
-			'params':[10, false, true]\
+			'params':[12, false, true]\
 		},\
     {\
       'name':'Interrupt_Manager',\
@@ -51,7 +51,7 @@
       'name':'LoRa',\
       'params':[\
         255,\
-        7,\
+        8,\
         20,\
         3,\
         200\

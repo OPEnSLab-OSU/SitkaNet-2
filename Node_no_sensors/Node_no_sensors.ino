@@ -111,7 +111,7 @@ void setup()
   Loom.parse_config(json_config);
   Loom.print_config();
   MARK;
-  mySDI12.begin();			  
+	/*mySDI12.begin();			  
   delay(500); // allow things to settle
   MARK;
   Serial.println("Scanning all addresses, please wait...");
@@ -127,7 +127,7 @@ void setup()
       found = true;
       break;
     }
-  }
+  }*/
   MARK;
   Loom.InterruptManager().register_ISR(TIP_INT_PIN, wakeUpTip, LOW, ISR_Type::IMMEDIATE);
   Loom.InterruptManager().register_ISR(RTC_INT_PIN, wakeUpRTC, LOW, ISR_Type::IMMEDIATE);
@@ -164,13 +164,13 @@ void loop()
     Loom.package();
     delay(100);
     MARK;
-    // scan address space 0-9
+/*     // scan address space 0-9
     for(char i = 'A'; i <= 'D'; i++) if(isTaken(i)){
       printInfo(i);
       Serial.print("\t");
       takeMeasurement(i);
       Serial.println();
-    }
+    }*/
     MARK;
     Loom.add_data("Tip", "Count", tipCount);
     Loom.add_data("rssi", "value", Loom.LoRa().get_signal_strength());
@@ -219,7 +219,7 @@ void loop()
 //////////////////////////////////////////////////////////
 // comment/uncomment these to enable functionality described
 
-// converts allowable address characters '0'-'9', 'a'-'z', 'A'-'Z',
+/*// converts allowable address characters '0'-'9', 'a'-'z', 'A'-'Z',
 // to a decimal number between 0 and 61 (inclusive) to cover the 62 possible addresses
 byte charToDec(char i){
   if((i >= '0') && (i <= '9')) return i - '0';
@@ -405,4 +405,4 @@ boolean setTaken(byte i){
   byte k = i % 8;   // bit #
   addressRegister[j] |= (1 << k);
   return !initStatus; // return false if already taken
-}
+}*/

@@ -7,7 +7,7 @@
   'components':[\
     {\
       'name':'LoRa',\
-      'params':[255,0,20,3,200]\
+      'params':[255,3,20,3,200]\
     },\
     {\
       'name':'Ethernet',\

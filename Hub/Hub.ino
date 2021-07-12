@@ -20,7 +20,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <Loom.h>
-//#include "SitkaNetJSON.h"
 //#include "FeatherFault.h"
 
 // Include configuration
@@ -53,10 +52,10 @@ void setup()
   */
 
   // for Hypnos with ethernet stacked on sensor rail
-  pinMode(5, OUTPUT);    // Enable control of 3.3V rail
-  pinMode(6, OUTPUT);   // Enable control of 5V rail
-  digitalWrite(5, LOW); // Enable 3.3V rail
-  digitalWrite(6, HIGH);  // Enable 5V rail
+  //pinMode(5, OUTPUT);    // Enable control of 3.3V rail
+  //pinMode(6, OUTPUT);   // Enable control of 5V rail
+  //digitalWrite(5, LOW); // Enable 3.3V rail
+  //digitalWrite(6, HIGH);  // Enable 5V rail
   
 	Loom.begin_serial();
 	 // MARK;
@@ -71,7 +70,7 @@ void setup()
 
 void loop() 
 { 
-	if (Loom.LoRa().receive_blocking(10000)) {
+	if (Loom.LoRa().receive_blocking(5000)) {
   // MARK;
 		Loom.display_data();
 /*  if(Loom.SDCARD().get_active()){
